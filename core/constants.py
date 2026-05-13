@@ -55,8 +55,8 @@ SCORE_2       = 1500
 
 # Difficulty configs
 DIFFICULTY_CONFIGS = {
-    EASY:   {"algorithm": "Minimax",          "depth": 4},
-    MEDIUM: {"algorithm": "Alpha-Beta",        "depth": 3},
+    EASY:   {"algorithm": "Minimax",          "depth": 3},
+    MEDIUM: {"algorithm": "Alpha-Beta",        "depth": 4},
 }
 
 # FPS
