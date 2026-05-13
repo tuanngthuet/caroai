@@ -27,16 +27,26 @@ def is_valid(board, r, c):
     return 0 <= r < BOARD_SIZE and 0 <= c < BOARD_SIZE and board[r][c] == EMPTY
 
 def get_candidate_moves(board, radius=2):
-    """Only return cells near existing pieces."""
-    occupied = {(r,c) for r in range(BOARD_SIZE) for c in range(BOARD_SIZE) if board[r][c] != EMPTY}
-    if not occupied:
-        center = BOARD_SIZE // 2
-        return [(center, center)]
-    candidates = set()
-    for (or_, oc) in occupied:
-        for dr in range(-radius, radius+1):
-            for dc in range(-radius, radius+1):
-                nr, nc = or_+dr, oc+dc
-                if 0 <= nr < BOARD_SIZE and 0 <= nc < BOARD_SIZE and board[nr][nc] == EMPTY:
-                    candidates.add((nr, nc))
-    return list(candidates)
+    moves = set()
+
+    for r in range(BOARD_SIZE):
+        for c in range(BOARD_SIZE):
+
+            if board[r][c] != EMPTY:
+
+                for dr in range(-radius, radius + 1):
+                    for dc in range(-radius, radius + 1):
+
+                        nr = r + dr
+                        nc = c + dc
+
+                        if (
+                            0 <= nr < BOARD_SIZE and
+                            0 <= nc < BOARD_SIZE and
+                            board[nr][nc] == EMPTY
+                        ):
+                            moves.add((nr, nc))
+
+    if not moves:
+        return [(BOARD_SIZE // 2, BOARD_SIZE // 2)]
+    return list(moves)

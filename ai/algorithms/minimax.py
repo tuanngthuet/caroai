@@ -1,7 +1,7 @@
 # ai/algorithms/minimax.py
 from core.constants import BOARD_SIZE, EMPTY, AI, PLAYER, SCORE_WIN
 from game.rules import check_winner, get_candidate_moves
-from ai.evaluation.basic_eval import evaluate_board
+from ai.evaluation.evaluation import evaluate_board
 from ai.utils.node_counter import NodeCounter
 
 counter = NodeCounter()

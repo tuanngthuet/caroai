@@ -1,7 +1,7 @@
 # ai/algorithms/alphabeta.py
 from core.constants import AI, PLAYER, SCORE_WIN, EMPTY
 from game.rules import check_winner, get_candidate_moves
-from ai.evaluation.basic_eval import evaluate_board
+from ai.evaluation.evaluation import evaluate_board
 from ai.utils.node_counter import NodeCounter
 
 counter = NodeCounter()
@@ -15,7 +15,7 @@ def alphabeta(board, depth, alpha, beta, is_maximizing, last_move, ai_player=AI,
     if winner == human_player:
         return -(SCORE_WIN - depth)
     if depth == 0:
-        return evaluate_board(board, ai_player, human_player)
+        return evaluate_board(board, last_move, ai_player, human_player)
 
     moves = get_candidate_moves(board)
     if not moves:
@@ -56,6 +56,10 @@ def get_best_move_alphabeta(board, depth, ai_player=AI, human_player=PLAYER):
         board[r][c] = ai_player
         val = alphabeta(board, depth-1, alpha, beta, False, (r,c), ai_player, human_player)
         board[r][c] = EMPTY
+
+        if val >= SCORE_WIN:
+            return (r, c), val, counter.get()
+
         if val > best_val:
             best_val = val
             best_move = (r, c)

@@ -50,8 +50,8 @@ FONT_SMALL_SIZE  = 15
 # AI Score table
 SCORE_WIN     = 100000
 SCORE_3       = 10000
-SCORE_2       = 1000
-SCORE_BLOCK3  = 9000
+SCORE_BLOCK3  = 7000
+SCORE_2       = 1500
 
 # Difficulty configs
 DIFFICULTY_CONFIGS = {
