@@ -1,0 +1,24 @@
+# cache
+__pycache__/
+*.pyc
+
+# virtual env
+venv/
+.env/
+
+# vscode
+.vscode/
+
+# pycharm
+.idea/
+
+# build
+dist/
+build/
+
+# logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
