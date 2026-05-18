@@ -31,6 +31,7 @@ class GameScreen:
         # Back button
         self.btn_back = Button((14, 14, 110, 36), "← Menu", fonts['small'])
         self.btn_restart = Button((134, 14, 110, 36), "↩ Restart", fonts['small'])
+        self.btn_undo = Button((254, 14, 90, 36), "⎌ Undo", fonts['small'])
 
         # Enrich state with agent name
         self._update_agent_name()
@@ -53,6 +54,9 @@ class GameScreen:
         if self.btn_restart.clicked(event):
             self._restart()
             return None
+        if self.btn_undo.clicked(event):
+            self._undo()
+            return None
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.manager.state.current_turn == PLAYER and not self.manager.state.winner and not self.manager.state.is_draw:
@@ -69,6 +73,7 @@ class GameScreen:
     def update(self, dt, mouse_pos):
         self.btn_back.update(mouse_pos)
         self.btn_restart.update(mouse_pos)
+        self.btn_undo.update(mouse_pos)
         self.popup.update(mouse_pos)
         self.anim.update(dt)
 
@@ -112,6 +117,7 @@ class GameScreen:
         # Buttons
         self.btn_back.draw(self.surface)
         self.btn_restart.draw(self.surface)
+        self.btn_undo.draw(self.surface)
 
         # Popup
         self.popup.draw(self.surface)
@@ -138,3 +144,10 @@ class GameScreen:
         self.popup.hide()
         self._update_agent_name()
         self.ai_thread = None
+
+    def _undo(self):
+        if self.ai_thread and self.ai_thread.is_alive():
+            return  # AI is thinking, can't undo
+        if self.manager.undo_last_round():
+            self.anim.reset()
+            self.popup.hide()

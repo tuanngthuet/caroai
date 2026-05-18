@@ -49,10 +49,11 @@ class MainMenu:
 
         self.btn_play = Button((bx, 340, bw, bh), "PLAY", self.font_large)
         self.btn_benchmark = Button((bx, 410, bw, bh), "BENCHMARK", self.font_large)
-        self.btn_exit = Button((bx, 480, bw, bh), "EXIT", self.font_large)
+        self.btn_analysis = Button((bx, 480, bw, bh), "ANALYSIS", self.font_large)
+        self.btn_exit = Button((bx, 550, bw, bh), "EXIT", self.font_large)
 
         dw, dh = 150, 42
-        total = 3 * dw + 2 * 16
+        total = 2 * dw + 16
         dx0 = cx - total // 2
 
         self.diff_buttons = {
@@ -69,6 +70,8 @@ class MainMenu:
             return ("play", self.selected_difficulty)
         if self.btn_benchmark.clicked(event):
             return ("benchmark", self.selected_difficulty)
+        if self.btn_analysis.clicked(event):
+            return ("analysis",)
         if self.btn_exit.clicked(event):
             return ("exit",)
         return None
@@ -76,6 +79,7 @@ class MainMenu:
     def update(self, mouse_pos):
         self.btn_play.update(mouse_pos)
         self.btn_benchmark.update(mouse_pos)
+        self.btn_analysis.update(mouse_pos)
         self.btn_exit.update(mouse_pos)
         for btn in self.diff_buttons.values():
             btn.update(mouse_pos)
@@ -103,6 +107,7 @@ class MainMenu:
 
         self.btn_play.draw(surface)
         self.btn_benchmark.draw(surface)
+        self.btn_analysis.draw(surface)
         self.btn_exit.draw(surface)
 
         # Footer

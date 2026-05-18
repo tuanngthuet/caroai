@@ -1,113 +1,117 @@
 # ai/evaluation/evaluation.py
-from core.constants import BOARD_SIZE, WIN_LENGTH, EMPTY, PLAYER, AI
-from core.constants import SCORE_WIN, SCORE_3, SCORE_2, SCORE_BLOCK3
+from core.constants import BOARD_SIZE, WIN_LENGTH, EMPTY, PLAYER, AI, SCORE_WIN
 
-DIRECTIONS = [(0,1),(1,0),(1,1),(1,-1)]
+DIRECTIONS = [(0, 1), (1, 0), (1, 1), (1, -1)]
 
-def evaluate_board(board, move, ai_player=AI, human_player=PLAYER):
+# Pattern scores: keyed by (count, open_ends)
+# open_ends: 0 = both blocked, 1 = one open, 2 = both open
+_AI_SCORE = {
+    (4, 2): SCORE_WIN,        # open-4  → guaranteed win
+    (4, 1): 50_000,           # blocked-4 → win next move
+    (4, 0): 0,                # dead
+    (3, 2): 5_000,            # open-3  → strong threat
+    (3, 1): 500,              # blocked-3
+    (3, 0): 0,
+    (2, 2): 200,
+    (2, 1): 50,
+    (2, 0): 0,
+}
+_HU_SCORE = {
+    (4, 2): SCORE_WIN,
+    (4, 1): 45_000,           # slightly less than AI so AI prefers winning over blocking
+    (4, 0): 0,
+    (3, 2): 4_000,
+    (3, 1): 400,
+    (3, 0): 0,
+    (2, 2): 150,
+    (2, 1): 40,
+    (2, 0): 0,
+}
 
-    if move is None:
+
+def _score_sequence(board, r, c, dr, dc, player, opponent):
+    """
+    Starting at (r,c) going in direction (dr,dc), count consecutive `player`
+    pieces and check openness of both ends.
+    Returns score contribution for this sequence.
+    """
+    count = 0
+    nr, nc = r, c
+    while 0 <= nr < BOARD_SIZE and 0 <= nc < BOARD_SIZE and board[nr][nc] == player:
+        count += 1
+        nr += dr
+        nc += dc
+
+    if count == 0:
         return 0
 
-    r, c = move
+    # Check forward end (after the run)
+    fwd_open = (0 <= nr < BOARD_SIZE and 0 <= nc < BOARD_SIZE and board[nr][nc] == EMPTY)
+
+    # Check backward end (before start)
+    br, bc = r - dr, c - dc
+    bwd_open = (0 <= br < BOARD_SIZE and 0 <= bc < BOARD_SIZE and board[br][bc] == EMPTY)
+
+    open_ends = int(fwd_open) + int(bwd_open)
+
+    if count >= WIN_LENGTH:
+        return SCORE_WIN
+
+    table = _AI_SCORE if player != opponent else _HU_SCORE
+    # We always call with player=ai or player=human, so pick the right table outside
+    return table.get((count, open_ends), 0)
+
+
+def evaluate_board(board, move, ai_player=AI, human_player=PLAYER):
+    """
+    Full-board evaluation. Scans every cell in every direction,
+    only counting each run once (from its leftmost/topmost cell).
+    """
     score = 0
+    visited = [[False] * BOARD_SIZE for _ in range(BOARD_SIZE)]  # per-direction tracking done inline
 
     for dr, dc in DIRECTIONS:
+        seen = [[False] * BOARD_SIZE for _ in range(BOARD_SIZE)]
+        for r in range(BOARD_SIZE):
+            for c in range(BOARD_SIZE):
+                if seen[r][c]:
+                    continue
+                v = board[r][c]
+                if v == EMPTY:
+                    continue
 
-        cells = []
+                # Only start a run from the beginning of a sequence
+                pr, pc = r - dr, c - dc
+                if 0 <= pr < BOARD_SIZE and 0 <= pc < BOARD_SIZE and board[pr][pc] == v:
+                    continue  # not the start of this run
 
-        # lấy đoạn dài 9 ô quanh move
-        for offset in range(-(WIN_LENGTH-1), WIN_LENGTH):
+                # Count run length and mark visited
+                count = 0
+                nr, nc = r, c
+                while 0 <= nr < BOARD_SIZE and 0 <= nc < BOARD_SIZE and board[nr][nc] == v:
+                    seen[nr][nc] = True
+                    count += 1
+                    nr += dr
+                    nc += dc
 
-            nr = r + offset * dr
-            nc = c + offset * dc
+                if count >= WIN_LENGTH:
+                    if v == ai_player:
+                        score += SCORE_WIN
+                    else:
+                        score -= SCORE_WIN
+                    continue
 
-            if 0 <= nr < BOARD_SIZE and 0 <= nc < BOARD_SIZE:
-                cells.append(board[nr][nc])
-            else:
-                cells.append(-1)
-
-        # sliding window size = WIN_LENGTH
-        for i in range(len(cells) - WIN_LENGTH + 1):
-
-            segment = cells[i:i+WIN_LENGTH]
-
-            ai_count = 0
-            human_count = 0
-            empty_count = 0
-
-            for v in segment:
+                # Check openness
+                fwd_open = (0 <= nr < BOARD_SIZE and 0 <= nc < BOARD_SIZE
+                            and board[nr][nc] == EMPTY)
+                br, bc = r - dr, c - dc
+                bwd_open = (0 <= br < BOARD_SIZE and 0 <= bc < BOARD_SIZE
+                            and board[br][bc] == EMPTY)
+                open_ends = int(fwd_open) + int(bwd_open)
 
                 if v == ai_player:
-                    ai_count += 1
-
-                elif v == human_player:
-                    human_count += 1
-
-                elif v == EMPTY:
-                    empty_count += 1
-
-            # AI patterns
-            if human_count == 0:
-
-                if ai_count >= WIN_LENGTH:
-                    score += SCORE_WIN
-
-                elif ai_count == 4 and empty_count == 1:
-                    score += SCORE_3 * 5
-
-                elif ai_count == 3 and empty_count == 2:
-                    score += SCORE_3
-
-                elif ai_count == 2 and empty_count == 3:
-                    score += SCORE_2
-
-            # Human patterns
-            elif ai_count == 0:
-
-                if human_count >= WIN_LENGTH:
-                    score -= SCORE_WIN
-
-                elif human_count == 4 and empty_count == 1:
-                    score -= SCORE_3 * 5
-
-                elif human_count == 3 and empty_count == 2:
-                    score -= SCORE_3
-
-                elif human_count == 2 and empty_count == 3:
-                    score -= SCORE_2
-
-    return score
-
-def _score_line(board, r, c, dr, dc, ai, human):
-    score = 0
-    for player, sign in [(ai, 1), (human, -1)]:
-        count = 0
-        open_ends = 0
-        # forward
-        nr, nc = r, c
-        for _ in range(WIN_LENGTH):
-            if 0 <= nr < BOARD_SIZE and 0 <= nc < BOARD_SIZE:
-                if board[nr][nc] == player:
-                    count += 1
-                elif board[nr][nc] == EMPTY:
-                    open_ends += 1
-                    break
+                    score += _AI_SCORE.get((count, open_ends), 0)
                 else:
-                    break
-            nr += dr; nc += dc
-        # check end open
-        er, ec = r + dr*count, c + dc*count
-        if 0 <= er < BOARD_SIZE and 0 <= ec < BOARD_SIZE and board[er][ec] == EMPTY:
-            open_ends += 1
+                    score -= _HU_SCORE.get((count, open_ends), 0)
 
-        if count >= WIN_LENGTH:
-            s = SCORE_WIN
-        elif count == 3:
-            s = SCORE_3 if open_ends == 2 else SCORE_BLOCK3
-        elif count == 2:
-            s = SCORE_2
-        else:
-            s = 0
-        score += sign * s
     return score

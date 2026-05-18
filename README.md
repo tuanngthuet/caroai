@@ -16,7 +16,6 @@ python main.py
 | Board | 15×15, win with 5 in a row |
 | Easy AI | Minimax, depth 2 |
 | Medium AI | Alpha-Beta Pruning, depth 3 |
-| Hard AI | Advanced Alpha-Beta + move ordering, depth 4 |
 | Benchmark | AI vs AI match with node/time stats |
 | UI | Dark modern theme, hover effects, win animation |
 
@@ -28,7 +27,7 @@ caro_game/
 ├── core/                     # Constants, game state
 ├── game/                     # Board rules, game manager
 ├── ai/
-│   ├── agents/               # EasyAgent, MediumAgent, HardAgent
+│   ├── agents/               # EasyAgent, MediumAgent, 
 │   ├── algorithms/           # minimax, alphabeta, advanced_alphabeta
 │   ├── evaluation/           # basic_eval, advanced_eval
 │   ├── heuristics/           # move_ordering

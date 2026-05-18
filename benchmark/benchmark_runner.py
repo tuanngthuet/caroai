@@ -1,97 +1,162 @@
-# benchmark/benchmark_runner.py
 import time
-from core.constants import BOARD_SIZE, EMPTY, PLAYER, AI, WIN_LENGTH, EASY, MEDIUM
+import json
+from core.constants import BOARD_SIZE, EMPTY, AI, PLAYER
 from game.rules import check_winner
-from ai.agents.minimax import Minimax
-from ai.agents.alphabetapuring import AlphaBeta
+from ai.algorithms.minimax import get_best_move_minimax
+from ai.algorithms.alphabeta import get_best_move_alphabeta
 
-AGENTS = {EASY: Minimax, MEDIUM: AlphaBeta}
+ALGORITHMS = {
+    "Minimax":    get_best_move_minimax,
+    "Alpha-Beta": get_best_move_alphabeta,
+}
 
-class BenchmarkResult:
-    def __init__(self, agent1_name, agent2_name):
-        self.agent1_name = agent1_name
-        self.agent2_name = agent2_name
-        self.winner = None
-        self.total_moves = 0
-        self.agent1_stats = {"total_nodes": 0, "total_time": 0.0, "moves": 0}
-        self.agent2_stats = {"total_nodes": 0, "total_time": 0.0, "moves": 0}
-        self.is_draw = False
 
-    def summary(self):
-        def avg(s):
-            m = s["moves"]
-            return {
-                "avg_nodes": s["total_nodes"]//max(1,m),
-                "avg_time": s["total_time"]/max(1,m)
-            }
-        return {
-            "agent1": self.agent1_name,
-            "agent2": self.agent2_name,
-            "winner": self.winner,
-            "is_draw": self.is_draw,
-            "total_moves": self.total_moves,
-            "agent1_stats": avg(self.agent1_stats),
-            "agent2_stats": avg(self.agent2_stats),
-        }
+def _make_agent_fn(config):
+    """Return a callable (board, ai_player, human_player) -> (move, score, nodes, elapsed, depth)."""
+    algo_fn = ALGORITHMS[config["algorithm"]]
+    depth = config["depth"]
 
-def run_ai_vs_ai(diff1, diff2, max_moves=150):
-    """Run one AI vs AI match. AI player = AI token, human = PLAYER token."""
-    board = [[EMPTY]*BOARD_SIZE for _ in range(BOARD_SIZE)]
-    agent1 = AGENTS[diff1]()  # plays as AI
-    agent2 = AGENTS[diff2]()  # plays as PLAYER
+    def agent_fn(board, ai_player, human_player):
+        start = time.time()
+        move, score, nodes = algo_fn([row[:] for row in board], depth, ai_player, human_player)
+        return move, score, nodes, time.time() - start, depth
 
-    result = BenchmarkResult(diff1, diff2)
+    return agent_fn
+
+
+def run_custom_match(cfg_x, cfg_y, game_index, n_games, move_callback=None):
+    """
+    Run one AI vs AI game.
+    cfg_x / cfg_y: {"label": str, "config": {"algorithm": str, "depth": int}}
+    move_callback(dict) is called after every move with live progress info.
+    """
+    label_x = cfg_x["label"]
+    label_y = cfg_y["label"]
+    fn_x = _make_agent_fn(cfg_x["config"])
+    fn_y = _make_agent_fn(cfg_y["config"])
+
+    board = [[EMPTY] * BOARD_SIZE for _ in range(BOARD_SIZE)]
+    current = AI   # X goes first (AI token)
     move_count = 0
-    current = AI  # agent1 goes first
+    winner_label = None
+    is_draw = False
 
-    while move_count < max_moves:
+    while move_count < 150:
         if current == AI:
-            move, score, nodes, elapsed, depth = agent1.get_move(board, AI, PLAYER)
-            player_token = AI
-            stats = result.agent1_stats
+            move, _, nodes, elapsed, depth = fn_x(board, AI, PLAYER)
+            token = AI
+            mover = label_x
         else:
-            move, score, nodes, elapsed, depth = agent2.get_move(board, PLAYER, AI)
-            player_token = PLAYER
-            stats = result.agent2_stats
+            move, _, nodes, elapsed, depth = fn_y(board, PLAYER, AI)
+            token = PLAYER
+            mover = label_y
 
         if move is None:
-            result.is_draw = True
+            is_draw = True
             break
 
         r, c = move
-        board[r][c] = player_token
-        stats["total_nodes"] += nodes
-        stats["total_time"] += elapsed
-        stats["moves"] += 1
+        board[r][c] = token
         move_count += 1
-        result.total_moves = move_count
 
-        winner, _ = check_winner(board, (r, c))
-        if winner:
-            result.winner = diff1 if winner == AI else diff2
+        if move_callback:
+            move_callback({
+                "type": "move",
+                "game_index": game_index,
+                "move_count": move_count,
+                "mover": mover,
+                "move": (r, c),
+                "nodes": nodes,
+                "elapsed": elapsed,
+                "board": [row[:] for row in board],
+            })
+
+        w, _ = check_winner(board, (r, c))
+        if w:
+            winner_label = label_x if w == AI else label_y
             break
 
-        # Check full board
-        if all(board[r][c] != EMPTY for r in range(BOARD_SIZE) for c in range(BOARD_SIZE)):
-            result.is_draw = True
+        if all(board[i][j] != EMPTY for i in range(BOARD_SIZE) for j in range(BOARD_SIZE)):
+            is_draw = True
             break
 
         current = PLAYER if current == AI else AI
 
-    return result
+    if is_draw:
+        winner_label = "draw"
+        result_x = result_y = "draw"
+    else:
+        result_x = "win" if winner_label == label_x else "loss"
+        result_y = "win" if winner_label == label_y else "loss"
+
+    match_id = f"{label_x}_vs_{label_y}__game_{game_index}"
+
+    # Build final board string
+    symbols = {EMPTY: ".", AI: "X", PLAYER: "O"}
+    board_lines = ["Final board:"]
+    for row in board:
+        board_lines.append(" ".join(symbols[v] for v in row))
+    board_str = "\n".join(board_lines)
+
+    agent_x_json = json.dumps({
+        "label": label_x,
+        "config": {
+            "depth": cfg_x["config"]["depth"],
+            "algorithm": cfg_x["config"]["algorithm"],
+            "use_cython_search": False,
+            "use_tss": False,
+            "use_lazy_smp": False,
+            "beam_width_root": 0,
+            "beam_width_inner": 0,
+            "move_time_budget_sec": 20,
+        }
+    })
+    agent_y_json = json.dumps({
+        "label": label_y,
+        "config": {
+            "depth": cfg_y["config"]["depth"],
+            "algorithm": cfg_y["config"]["algorithm"],
+            "use_cython_search": False,
+            "use_tss": False,
+            "use_lazy_smp": False,
+            "beam_width_root": 0,
+            "beam_width_inner": 0,
+            "move_time_budget_sec": 20,
+        }
+    })
+
+    output = (
+        f"completion_index={game_index}\n"
+        f"game_seq={game_index}\n"
+        f"match_id={match_id}\n"
+        f"winner={winner_label}\n"
+        f"agent_x={agent_x_json}\n"
+        f"agent_o={agent_y_json}\n"
+        f"result_for_agent_x={result_x}\n"
+        f"result_for_agent_o={result_y}\n"
+        f"{board_str}"
+    )
+
+    return {
+        "output": output,
+        "winner": winner_label,
+        "result_x": result_x,
+        "result_y": result_y,
+        "match_id": match_id,
+        "game_index": game_index,
+        "label_x": label_x,
+        "label_y": label_y,
+    }
 
 
-def run_benchmark_suite(callback=None):
-    """Run all benchmark matchups, calling callback(result_dict) for each."""
-    matchups = [
-        (EASY, MEDIUM)
-    ]
+def run_custom_suite(cfg_x, cfg_y, n_games, callback=None, move_callback=None):
+    """Run n_games matches between cfg_x and cfg_y, calling callback(game_result) after each."""
     results = []
-    for d1, d2 in matchups:
+    for i in range(1, n_games + 1):
         if callback:
-            callback(f"Running {d1} vs {d2}...")
-        r = run_ai_vs_ai(d1, d2, max_moves=80)
-        results.append(r.summary())
+            callback({"status": "running", "game_index": i, "n_games": n_games})
+        r = run_custom_match(cfg_x, cfg_y, i, n_games, move_callback=move_callback)
+        results.append(r)
         if callback:
-            callback(r.summary())
+            callback(r)
     return results

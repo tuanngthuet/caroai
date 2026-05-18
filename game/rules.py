@@ -28,25 +28,21 @@ def is_valid(board, r, c):
 
 def get_candidate_moves(board, radius=2):
     moves = set()
-
+    r_lo = max(0, radius)
     for r in range(BOARD_SIZE):
+        row = board[r]
         for c in range(BOARD_SIZE):
-
-            if board[r][c] != EMPTY:
-
-                for dr in range(-radius, radius + 1):
-                    for dc in range(-radius, radius + 1):
-
-                        nr = r + dr
-                        nc = c + dc
-
-                        if (
-                            0 <= nr < BOARD_SIZE and
-                            0 <= nc < BOARD_SIZE and
-                            board[nr][nc] == EMPTY
-                        ):
-                            moves.add((nr, nc))
-
+            if row[c] == EMPTY:
+                continue
+            for dr in range(-radius, radius + 1):
+                nr = r + dr
+                if nr < 0 or nr >= BOARD_SIZE:
+                    continue
+                nr_row = board[nr]
+                for dc in range(-radius, radius + 1):
+                    nc = c + dc
+                    if 0 <= nc < BOARD_SIZE and nr_row[nc] == EMPTY:
+                        moves.add((nr, nc))
     if not moves:
         return [(BOARD_SIZE // 2, BOARD_SIZE // 2)]
     return list(moves)

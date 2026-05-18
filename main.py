@@ -15,6 +15,7 @@ from core.constants import (
 from ui.menu.main_menu import MainMenu
 from ui.screens.game_screen import GameScreen
 from ui.screens.benchmark_screen import BenchmarkScreen
+from ui.screens.analysis_screen import AnalysisScreen
 
 
 def load_fonts():
@@ -55,6 +56,7 @@ def main():
     menu = MainMenu(fonts)
     game_screen = None
     bench_screen = None
+    analysis_screen = None
     selected_difficulty = EASY
 
     while True:
@@ -77,6 +79,9 @@ def main():
                     elif action[0] == "benchmark":
                         bench_screen = BenchmarkScreen(screen, fonts)
                         current_screen = "benchmark"
+                    elif action[0] == "analysis":
+                        analysis_screen = AnalysisScreen(screen, fonts)
+                        current_screen = "analysis"
                     elif action[0] == "exit":
                         pygame.quit()
                         sys.exit()
@@ -93,6 +98,12 @@ def main():
                     current_screen = "menu"
                     bench_screen = None
 
+            elif current_screen == "analysis":
+                action = analysis_screen.handle_event(event)
+                if action == "menu":
+                    current_screen = "menu"
+                    analysis_screen = None
+
         # Update
         if current_screen == "menu":
             menu.update(mouse_pos)
@@ -101,6 +112,9 @@ def main():
         elif current_screen == "benchmark" and bench_screen:
             bench_screen.update(dt, mouse_pos)
 
+        elif current_screen == "analysis" and analysis_screen:
+            analysis_screen.update(dt, mouse_pos)
+
         # Draw
         if current_screen == "menu":
             menu.draw(screen)
@@ -108,6 +122,8 @@ def main():
             game_screen.draw()
         elif current_screen == "benchmark" and bench_screen:
             bench_screen.draw()
+        elif current_screen == "analysis" and analysis_screen:
+            analysis_screen.draw()
 
         pygame.display.flip()
 
