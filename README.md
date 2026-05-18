@@ -1,81 +1,131 @@
-# Caro AI Game
+# Caro AI
 
-**Python + Pygame · Minimax · Alpha-Beta Pruning · Advanced Heuristic Search**
+Trò chơi Caro AI với thuật toán tìm kiếm heuristic mạnh, xây dựng trên nền Minimax và Alpha-Beta Pruning. Dự án được phát triển từ một bài tập sinh viên thành phiên bản hoàn chỉnh với tìm kiếm sâu hơn, công cụ benchmark, chế độ phân tích và giao diện hiện đại.
 
-## Quick Start
+---
+
+## Khởi động nhanh
 
 ```bash
 pip install pygame
 python main.py
 ```
 
-## Features
+---
 
-| Feature | Details |
-|---|---|
-| Board | 15×15, win with 5 in a row |
-| Easy AI | Minimax, depth 2 |
-| Medium AI | Alpha-Beta Pruning, depth 3 |
-| Benchmark | AI vs AI match with node/time stats |
-| UI | Dark modern theme, hover effects, win animation |
+## Cấu trúc dự án
 
-## Project Structure
+| Đường dẫn | Vai trò |
+|-----------|---------|
+| `main.py` | Điểm khởi chạy — chạy `python main.py` từ thư mục gốc |
+| `core/` | Hằng số toàn cục (`constants.py`) và trạng thái ván đấu (`game_state.py`) |
+| `game/` | Luật chơi (`rules.py`) và quản lý ván đấu (`game_manager.py`) |
+| `ai/agents/` | Agent Easy (Minimax) và Medium (Alpha-Beta) |
+| `ai/algorithms/` | Cài đặt thuật toán minimax và alphabeta |
+| `ai/evaluation/` | Hàm đánh giá bàn cờ toàn cục |
+| `ai/heuristics/` | Sắp xếp nước đi (move ordering) |
+| `ui/menu/` | Menu chính |
+| `ui/screens/` | Màn hình chơi, benchmark, phân tích |
+| `ui/renderer/` | Vẽ bàn cờ |
+| `ui/hud/` | Bảng thông tin bên phải |
+| `ui/components/` | Popup kết thúc ván |
+| `ui/animations/` | Hiệu ứng đặt quân, thắng |
+| `benchmark/` | Chạy trận AI vs AI và xuất kết quả |
+| `requirements.txt` | Chỉ cần `pygame` |
+
+---
+
+## Tính năng
+
+| Tính năng | Chi tiết |
+|-----------|---------|
+| Bàn cờ | 15×15, thắng khi có 4 quân liên tiếp |
+| Chế độ Easy | Minimax, độ sâu 3 |
+| Chế độ Medium | Alpha-Beta Pruning, độ sâu 4 với iterative deepening |
+| Hoàn tác | Nút **⎌ Undo** lùi lại 1 lượt (cả nước AI lẫn người chơi) |
+| Benchmark | Chọn thuật toán, độ sâu, số ván — xem kết quả từng nước theo thời gian thực |
+| Phân tích | Tự đặt trạng thái bàn cờ, chọn AI, nhấn **▶ Move** để AI tính nước |
+| Giao diện | Chủ đề tối hiện đại, hiệu ứng hover, animation đặt quân, đường thắng |
+
+---
+
+## Điều khiển
+
+### Chơi thường
+- **Click chuột trái** vào ô để đặt quân (X)
+- AI (O) tự động đi sau
+- **← Menu** — quay về menu chính
+- **↩ Restart** — chơi lại từ đầu
+- **⎌ Undo** — hoàn tác nước vừa đi (lùi 1 lượt đầy đủ)
+
+### Benchmark
+1. Từ menu chính chọn **BENCHMARK**
+2. Cấu hình Agent X và Agent O (thuật toán + độ sâu)
+3. Chọn số ván đấu (1 / 3 / 5 / 10)
+4. Nhấn **▶ Run Benchmark**
+5. Xem bàn cờ trực tiếp từng nước, kết quả xuất theo định dạng:
 
 ```
-caro_game/
-├── main.py                   # Entry point
-├── core/                     # Constants, game state
-├── game/                     # Board rules, game manager
-├── ai/
-│   ├── agents/               # EasyAgent, MediumAgent, 
-│   ├── algorithms/           # minimax, alphabeta, advanced_alphabeta
-│   ├── evaluation/           # basic_eval, advanced_eval
-│   ├── heuristics/           # move_ordering
-│   └── utils/                # node_counter
-├── ui/
-│   ├── menu/                 # MainMenu
-│   ├── screens/              # GameScreen, BenchmarkScreen
-│   ├── components/           # EndPopup
-│   ├── animations/           # AnimationManager
-│   ├── renderer/             # BoardRenderer
-│   └── hud/                  # HUDPanel
-└── benchmark/                # run_benchmark_suite
+completion_index=1
+game_seq=1
+match_id=minimax_d3_vs_alphabeta_d4__game_1
+winner=alphabeta_d4
+agent_x={...}
+agent_o={...}
+result_for_agent_x=loss
+result_for_agent_o=win
+Final board:
+. . X O ...
 ```
 
-## Controls
+### Phân tích (Analysis)
+1. Từ menu chính chọn **ANALYSIS**
+2. **Click trái** vào ô để đặt quân (lần lượt: trống → X → O → trống)
+3. **Click phải** để xóa ô
+4. Chọn AI đi bên nào (X hoặc O), thuật toán và độ sâu ở thanh bên phải
+5. Nhấn **▶ Move** để AI tính và đi một nước
+6. Nhấn **Clear** để xóa toàn bộ bàn cờ
 
-- **Click** a cell to place your piece (X)
-- AI (O) responds automatically
-- Use the **← Menu** button to return to main menu
-- Use **↩ Restart** to reset the current game
+---
 
-## AI Architecture
+## Kiến trúc AI
 
-### Easy (Minimax, depth 2)
-Pure Minimax — no pruning. Slow on large boards but simple reference implementation.
+### Easy — Minimax (độ sâu 3)
+Minimax thuần túy có sắp xếp nước đi. Duyệt toàn bộ cây tìm kiếm không cắt tỉa.
 
-### Medium (Alpha-Beta, depth 3)
-Classic Alpha-Beta pruning. Cuts branches when `β ≤ α`, visiting far fewer nodes.
+### Medium — Alpha-Beta (độ sâu 4)
+Alpha-Beta Pruning kết hợp **iterative deepening** — tìm kiếm từ độ sâu 1 đến độ sâu đích, dùng nước tốt nhất của vòng trước để sắp xếp nước đi ở vòng sau, giúp cắt tỉa hiệu quả hơn.
 
-### Hard (Advanced Alpha-Beta, depth 4)
-Move ordering (winning moves first → blocking → center), heuristic candidate filtering (radius 2), and the advanced evaluation function with center-proximity bonus.
+### Sắp xếp nước đi (Move Ordering)
+Ưu tiên theo thứ tự:
+1. Nước thắng ngay lập tức của AI
+2. Nước chặn thắng ngay của đối thủ
+3. Điểm tấn công + phòng thủ kết hợp
 
-## Evaluation Function
+### Hàm đánh giá
+Quét toàn bộ bàn cờ theo 4 hướng, đếm từng chuỗi quân một lần duy nhất, phân biệt **đầu mở** và **đầu bị chặn**:
 
-| Pattern | Score |
-|---|---|
-| 5 AI pieces | +100,000 |
-| 4 AI pieces | +10,000 |
-| 3 AI pieces | +1,000 |
-| 2 AI pieces | +100 |
-| 4 human pieces | −9,000 |
-| 3 human pieces | −800 |
+| Mẫu | Điểm AI | Điểm đối thủ |
+|-----|---------|--------------|
+| 4 quân, 2 đầu mở | +100,000 (thắng) | −100,000 |
+| 4 quân, 1 đầu mở | +50,000 | −45,000 |
+| 3 quân, 2 đầu mở | +5,000 | −4,000 |
+| 3 quân, 1 đầu mở | +500 | −400 |
+| 2 quân, 2 đầu mở | +200 | −150 |
 
-## Benchmark
+---
 
-Open the game → click **Benchmark** to run:
-- Easy vs Medium
-- Medium vs Hard  
-- Easy vs Hard
+## Yêu cầu
 
-Stats displayed: avg nodes explored, avg time per move, winner.
+- Python 3.10+
+- pygame
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## Tags
+
+#Caro #CaroAI #Python #Pygame #Minimax #AlphaBeta #TTNT
