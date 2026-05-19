@@ -160,3 +160,48 @@ def run_custom_suite(cfg_x, cfg_y, n_games, callback=None, move_callback=None):
         if callback:
             callback(r)
     return results
+
+
+def run_full_matrix_suite(output_path="benchmark_matrix_results.txt", callback=None, move_callback=None):
+    """
+    Run every combination of:
+      Minimax depth 1-4 vs  Alpha-Beta depth 2-6
+    One game per pair (X=Minimax, O=AlphaBeta).
+    Appends structured output to output_path.
+    callback(dict) called after each game with result + progress info.
+    """
+    minimax_depths  = range(1, 5)   # 1..4
+    alphabeta_depths = range(2, 7)  # 2..6
+    pairs = [(md, ad) for md in minimax_depths for ad in alphabeta_depths]
+    total = len(pairs)
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(f"# Full Matrix Benchmark — Minimax d1-6 vs Alpha-Beta d2-7\n")
+        f.write(f"# Total matchups: {total}\n\n")
+
+    for idx, (md, ad) in enumerate(pairs, 1):
+        cfg_x = {
+            "label": f"minimax_d{md}",
+            "config": {"algorithm": "Minimax", "depth": md},
+        }
+        cfg_y = {
+            "label": f"alphabeta_d{ad}",
+            "config": {"algorithm": "Alpha-Beta", "depth": ad},
+        }
+
+        if callback:
+            callback({"status": "running", "matchup_index": idx, "total": total,
+                      "label_x": cfg_x["label"], "label_y": cfg_y["label"]})
+
+        result = run_custom_match(cfg_x, cfg_y, game_index=1, n_games=1,
+                                  move_callback=move_callback)
+
+        with open(output_path, "a", encoding="utf-8") as f:
+            f.write(f"# Matchup {idx}/{total}\n")
+            f.write(result["output"])
+            f.write("\n\n")
+
+        if callback:
+            callback({**result, "matchup_index": idx, "total": total})
+
+    return output_path

@@ -36,7 +36,7 @@ class AnalysisScreen:
         self.last_nodes = 0
         self.last_time = 0.0
         self.last_score = 0
-        self.status = "Edit board, then click ▶ Move"
+        self.status = "Edit board, then click Move"
         self.winner = None
         self.ai_thinking = False
         self.ai_thread = None
@@ -51,7 +51,7 @@ class AnalysisScreen:
                            for name in ALGORITHMS]
         self.btn_depths = [Button((bx + i * 34, 0, 30, 30), str(d), fonts['small'])
                            for i, d in enumerate(DEPTHS)]
-        self.btn_move   = Button((bx, SCREEN_HEIGHT - 70, 168, 44), "▶  Move", fonts['medium'])
+        self.btn_move   = Button((bx, SCREEN_HEIGHT - 70, 168, 44), "Move", fonts['medium'])
 
     # ------------------------------------------------------------------ #
     def handle_event(self, event):
@@ -226,6 +226,6 @@ class AnalysisScreen:
             self.winning_cells = cells
             self.status = f"{'X' if winner == AI else 'O'} wins!"
         else:
-            self.status = f"Moved ({r}, {c}) — click ▶ Move again"
+            self.status = f"Moved ({r}, {c}) — click Move again"
 
         self.ai_thinking = False

@@ -6,7 +6,7 @@ from core.constants import (
     COLOR_TEXT_DIM, COLOR_GREEN, COLOR_YELLOW, COLOR_RED,
     COLOR_PLAYER, COLOR_AI, BOARD_SIZE, EMPTY, AI, PLAYER,
 )
-from benchmark.benchmark_runner import run_custom_suite
+from benchmark.benchmark_runner import run_custom_suite, run_full_matrix_suite
 from ui.screens.benchmark_config_screen import BenchmarkConfigScreen
 from ui.menu.main_menu import Button
 
@@ -51,7 +51,7 @@ class BenchmarkScreen:
         }
 
         self.btn_back = Button((20, 20, 120, 38), "← Menu", self.fonts['small'])
-        self.btn_again = Button((SCREEN_WIDTH - 160, 20, 140, 38), "↩ Again", self.fonts['small'])
+        self.btn_again = Button((SCREEN_WIDTH - 160, 20, 140, 38), "Again", self.fonts['small'])
 
         self.thread = threading.Thread(target=self._worker, daemon=True)
         self.thread.start()
@@ -65,6 +65,8 @@ class BenchmarkScreen:
             if isinstance(action, tuple) and action[0] == "run":
                 _, cfg_x, cfg_o, n_games = action
                 self._start_run(cfg_x, cfg_o, n_games)
+            if isinstance(action, tuple) and action[0] == "run_matrix":
+                self._start_matrix_run()
             return None
 
         if self.btn_back.clicked(event):
@@ -102,25 +104,26 @@ class BenchmarkScreen:
         self.surface.fill(COLOR_BG)
         live = self._live
 
-        # Header
+        # Header — matchup index + move count
         hdr = self.fonts['medium'].render(
-            f"Game {live['game_index']} / {self.n_games}  —  Move {live['move_count']}",
+            f"Matchup {live['game_index']} / {self.n_games}  —  Move {live['move_count']}",
             True, COLOR_ACCENT)
         self.surface.blit(hdr, (SCREEN_WIDTH // 2 - hdr.get_width() // 2, 20))
 
-        # Agent labels
-        lx = self.fonts['small'].render(
-            f"X: {self.cfg_x['label']}", True, COLOR_AI)
-        lo = self.fonts['small'].render(
-            f"O: {self.cfg_o['label']}", True, COLOR_PLAYER)
-        self.surface.blit(lx, (SCREEN_WIDTH // 2 - lx.get_width() // 2 - 120, 55))
-        self.surface.blit(lo, (SCREEN_WIDTH // 2 - lo.get_width() // 2 + 120, 55))
+        # Agent labels (use cfg labels for regular run, live mover context for matrix)
+        lx_label = self.cfg_x.get('label', 'X')
+        lo_label = self.cfg_o.get('label', 'O')
+        lx = self.fonts['small'].render(f"X: {lx_label}", True, COLOR_AI)
+        lo = self.fonts['small'].render(f"O: {lo_label}", True, COLOR_PLAYER)
+        self.surface.blit(lx, (SCREEN_WIDTH // 2 - lx.get_width() // 2 - 140, 55))
+        self.surface.blit(lo, (SCREEN_WIDTH // 2 - lo.get_width() // 2 + 140, 55))
 
-        # Current mover
+        # Current mover + stats
         if live["mover"]:
+            thinking_color = COLOR_AI if live["mover"] == lx_label else COLOR_PLAYER
             mt = self.fonts['small'].render(
                 f"Thinking: {live['mover']}  |  nodes: {live['nodes']:,}  |  {live['elapsed']:.3f}s",
-                True, COLOR_YELLOW)
+                True, thinking_color)
             self.surface.blit(mt, (SCREEN_WIDTH // 2 - mt.get_width() // 2, 78))
 
         # Board
@@ -228,3 +231,68 @@ class BenchmarkScreen:
 
         run_custom_suite(self.cfg_x, self.cfg_o, self.n_games,
                          callback=on_game, move_callback=on_move)
+
+
+    def _start_matrix_run(self):
+        """Run all Minimax d1-6 vs AlphaBeta d2-7 matchups and save to file."""
+        self.phase = "running"
+        self.cfg_x = {"label": "Minimax d1-6"}
+        self.cfg_o = {"label": "AlphaBeta d2-7"}
+        self.n_games = 6 * 6   # 36 matchups
+        self.game_results = []
+        self.running = True
+        self.done = False
+        self.scroll = 0
+        self._lines_cache = ["Running full matrix: Minimax d1-6 vs AlphaBeta d2-7...", ""]
+        self._live = {
+            "board": [[EMPTY] * BOARD_SIZE for _ in range(BOARD_SIZE)],
+            "game_index": 1, "move_count": 0, "mover": "",
+            "last_move": None, "nodes": 0, "elapsed": 0.0,
+        }
+        self.btn_back  = Button((20, 20, 120, 38), "← Menu", self.fonts['small'])
+        self.btn_again = Button((SCREEN_WIDTH - 160, 20, 140, 38), "Again", self.fonts['small'])
+        self.thread = threading.Thread(target=self._matrix_worker, daemon=True)
+        self.thread.start()
+
+    def _matrix_worker(self):
+        output_path = "benchmark_matrix_results.txt"
+
+        def on_move(data):
+            self._live.update({
+                "board":      data["board"],
+                "move_count": data["move_count"],
+                "mover":      data["mover"],
+                "last_move":  data["move"],
+                "nodes":      data["nodes"],
+                "elapsed":    data["elapsed"],
+            })  # intentionally NOT updating game_index — set by status callback
+
+        def cb(data):
+            if "output" in data:
+                self.game_results.append(data)
+                mi = data.get("matchup_index", len(self.game_results))
+                total = data.get("total", self.n_games)
+                self._lines_cache.append(f"=== Matchup {mi}/{total}: {data['label_x']} vs {data['label_y']} ===")
+                self._lines_cache.extend(data["output"].splitlines())
+                self._lines_cache.append("")
+                self.scroll = max(0, len(self._lines_cache) - 30)
+            elif data.get("status") == "running":
+                mi = data.get("matchup_index", 0)
+                total = data.get("total", self.n_games)
+                lx = data.get("label_x", "")
+                ly = data.get("label_y", "")
+                self._lines_cache.append(f"Starting {mi}/{total}: {lx} vs {ly}...")
+                self.scroll = max(0, len(self._lines_cache) - 30)
+                # Update displayed agent labels and reset live board for new matchup
+                self.cfg_x = {"label": lx}
+                self.cfg_o = {"label": ly}
+                self._live.update({
+                    "board": [[EMPTY] * BOARD_SIZE for _ in range(BOARD_SIZE)],
+                    "game_index": mi, "move_count": 0,
+                    "mover": lx, "last_move": None, "nodes": 0, "elapsed": 0.0,
+                })
+
+        path = run_full_matrix_suite(output_path=output_path, callback=cb, move_callback=on_move)
+        self._lines_cache.append("")
+        self._lines_cache.append(f"✓ Results saved to: {path}")
+        self.scroll = max(0, len(self._lines_cache) - 30)
