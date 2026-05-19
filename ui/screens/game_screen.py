@@ -30,8 +30,8 @@ class GameScreen:
 
         # Back button
         self.btn_back = Button((14, 14, 110, 36), "← Menu", fonts['small'])
-        self.btn_restart = Button((134, 14, 110, 36), "↩ Restart", fonts['small'])
-        self.btn_undo = Button((254, 14, 90, 36), "⎌ Undo", fonts['small'])
+        self.btn_restart = Button((134, 14, 110, 36), "Restart", fonts['small'])
+        self.btn_undo = Button((254, 14, 90, 36), "Undo", fonts['small'])
 
         # Enrich state with agent name
         self._update_agent_name()
@@ -123,12 +123,14 @@ class GameScreen:
         self.popup.draw(self.surface)
 
     def _start_ai_thread(self):
+        self._ai_start_time = __import__('time').time()
         self.ai_thread = threading.Thread(target=self._ai_worker, daemon=True)
         self.ai_thread.start()
 
     def _ai_worker(self):
         with self.ai_lock:
             self.manager.ai_move()
+        self.manager.state.last_ai_time = __import__('time').time() - self._ai_start_time
 
     def _check_end(self):
         state = self.manager.state

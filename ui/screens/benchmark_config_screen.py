@@ -8,7 +8,7 @@ from core.constants import (
 from ui.menu.main_menu import Button
 
 ALGORITHMS = ["Minimax", "Alpha-Beta"]
-DEPTHS = [1, 2, 3, 4, 5]
+DEPTHS = [1, 2, 3, 4]
 MATCH_COUNTS = [1, 3, 5, 10]
 
 
@@ -96,7 +96,10 @@ class BenchmarkConfigScreen:
 
         self.btn_back = Button((20, 20, 120, 38), "← Menu", fonts['small'])
         self.btn_run = Button((SCREEN_WIDTH // 2 - 120, 450, 240, 48),
-                               "▶  Run Benchmark", fonts['medium'])
+                               "Run Benchmark", fonts['medium'])
+        self.btn_matrix = Button((SCREEN_WIDTH // 2 - 180, 510, 360, 40),
+                                  "Run Full Matrix  (Minimax d1-4 vs AlphaBeta d2-6)",
+                                  fonts['small'])
 
     def handle_event(self, event):
         if self.btn_back.clicked(event):
@@ -109,11 +112,14 @@ class BenchmarkConfigScreen:
         if self.btn_run.clicked(event):
             return ("run", self.agent_x.get_cfg(), self.agent_o.get_cfg(),
                     MATCH_COUNTS[self.match_idx])
+        if self.btn_matrix.clicked(event):
+            return ("run_matrix",)
         return None
 
     def update(self, mouse_pos):
         self.btn_back.update(mouse_pos)
         self.btn_run.update(mouse_pos)
+        self.btn_matrix.update(mouse_pos)
         self.agent_x.update(mouse_pos)
         self.agent_o.update(mouse_pos)
         for btn in self.match_btns:
@@ -140,3 +146,4 @@ class BenchmarkConfigScreen:
 
         self.btn_back.draw(self.surface)
         self.btn_run.draw(self.surface)
+        self.btn_matrix.draw(self.surface)
