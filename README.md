@@ -1,6 +1,7 @@
 # Caro AI
 
-Trò chơi Caro AI với thuật toán tìm kiếm heuristic mạnh, xây dựng trên nền Minimax và Alpha-Beta Pruning. Dự án được phát triển từ một bài tập sinh viên thành phiên bản hoàn chỉnh với tìm kiếm sâu hơn, công cụ benchmark, chế độ phân tích và giao diện hiện đại.
+Chuyển thể từ game gomoku 5, game này là biến thể khi người chơi sẽ thắng khi có hàng 4 theo chiều ngang, dọc và chéo.
+Bài toán sử dụng các thuật toán: Minimax, Alpha-beta pruning và có thêm 1 chút vè move ordering
 
 ---
 
@@ -31,7 +32,6 @@ python main.py
 | `ui/components/` | Popup kết thúc ván |
 | `ui/animations/` | Hiệu ứng đặt quân, thắng |
 | `benchmark/` | Chạy trận AI vs AI và xuất kết quả |
-| `requirements.txt` | Chỉ cần `pygame` |
 
 ---
 
@@ -41,10 +41,10 @@ python main.py
 |-----------|---------|
 | Bàn cờ | 15×15, thắng khi có 4 quân liên tiếp |
 | Chế độ Easy | Minimax, độ sâu 3 |
-| Chế độ Medium | Alpha-Beta Pruning, độ sâu 4 với iterative deepening |
-| Hoàn tác | Nút **⎌ Undo** lùi lại 1 lượt (cả nước AI lẫn người chơi) |
+| Chế độ Medium | Alpha-Beta Pruning, độ sâu 4 |
+| Hoàn tác | Nút **Undo** lùi lại 1 lượt (cả nước AI lẫn người chơi) |
 | Benchmark | Chọn thuật toán, độ sâu, số ván — xem kết quả từng nước theo thời gian thực |
-| Phân tích | Tự đặt trạng thái bàn cờ, chọn AI, nhấn **▶ Move** để AI tính nước |
+| Phân tích | Tự đặt trạng thái bàn cờ, chọn AI, nhấn **Move** để AI tính nước |
 | Giao diện | Chủ đề tối hiện đại, hiệu ứng hover, animation đặt quân, đường thắng |
 
 ---
@@ -57,6 +57,10 @@ python main.py
 - **← Menu** — quay về menu chính
 - **↩ Restart** — chơi lại từ đầu
 - **⎌ Undo** — hoàn tác nước vừa đi (lùi 1 lượt đầy đủ)
+
+![Chơi thường](https://github.com/tuanngthuet/24020347_23021237_CaroAI/blob/main/image/Play1.png)
+
+![Chơi thường]([https://github.com/tuanngthuet/24020347_23021237_CaroAI/blob/main/image/play2.png)
 
 ### Benchmark
 1. Từ menu chính chọn **BENCHMARK**
@@ -77,6 +81,8 @@ result_for_agent_o=win
 Final board:
 . . X O ...
 ```
+![Benchmark](https://github.com/tuanngthuet/24020347_23021237_CaroAI/blob/main/image/Benchmark2.png)
+![Benchmark](https://github.com/tuanngthuet/24020347_23021237_CaroAI/blob/main/image/Benchmark1.png)
 
 ### Phân tích (Analysis)
 1. Từ menu chính chọn **ANALYSIS**
@@ -87,6 +93,8 @@ Final board:
 6. Nhấn **Clear** để xóa toàn bộ bàn cờ
 
 ---
+
+![Analyst](https://github.com/tuanngthuet/24020347_23021237_CaroAI/blob/main/image/Analyst.png)
 
 ## Kiến trúc AI
 
