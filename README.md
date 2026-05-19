@@ -1,7 +1,7 @@
 # Caro AI
 
 Chuyển thể từ game gomoku 5, game này là biến thể khi người chơi sẽ thắng khi có hàng 4 theo chiều ngang, dọc và chéo.
-Bài toán sử dụng các thuật toán: Minimax, Alpha-beta pruning và có thêm 1 chút vè move ordering
+Bài toán sử dụng các thuật toán: Minimax, Alpha-beta pruning và một số thuật toán để tăng hiệu năng (Move ordering, iterative deepening, v.v)
 
 ---
 
